@@ -3,6 +3,7 @@ var cheerio = require('cheerio');
 var iconv = require('iconv-lite');
 var http = require('http');
 var BufferHelper = require('bufferhelper');
+var async = require('async');
 
 var aidExp = /\/\d+/;
 var commentExp = /unescape\('.*/;
@@ -58,35 +59,83 @@ loadData('http://www.ithome.com/list/list_9999.html').then(function (data) {
 
   co(gen1).then(function () {
     var gen2 = function*() {
-      for (var i = 0; i < aidArr.length; i++) {
-        var result = yield loadData('http://www.ithome.com/ithome/CommentCount.aspx?newsid=' + aidArr[i]);
-        var hehe = result.match(commentExp)[0].substr(10);
-        var html = hehe.substring(0, hehe.length - 2);
-        var $ = cheerio.load(unescape(html));
-        $('#ulcommentlist>li').each(function (index, element) {
-          var hehehehe = $($(element).find('div.info.rmp')[0]).find('.mobile');
-          if (hehehehe.length) {
-            //var name = $(hehehehe).find('a').text();
-            var type = $(hehehehe).attr('class').substr(7);
-            var isExist = true;
-            $(done).each(function (index2, element2) {
-              if (element2.type === type) {
-                element2.sum++;
-                isExist = false;
-                return false;
+      console.log(aidArr);
+
+      var concurrencyCount = 0;
+      var fetchUrl = function (url, callback) {
+        concurrencyCount++;
+        console.log('现在的并发数是', concurrencyCount, '，正在抓取的是', url);
+        loadData('http://www.ithome.com/ithome/CommentCount.aspx?newsid=' + url).then(function (res) {
+          concurrencyCount--;
+
+            var hehe = res.match(commentExp)[0].substr(10);
+            var html = hehe.substring(0, hehe.length - 2);
+            var $ = cheerio.load(unescape(html));
+            $('#ulcommentlist>li').each(function (index, element) {
+              var hehehehe = $($(element).find('div.info.rmp')[0]).find('.mobile');
+              if (hehehehe.length) {
+                //var name = $(hehehehe).find('a').text();
+                var type = $(hehehehe).attr('class').substr(7);
+                var isExist = true;
+                $(done).each(function (index2, element2) {
+                  if (element2.type === type) {
+                    element2.sum++;
+                    isExist = false;
+                    return false;
+                  }
+                });
+                if (isExist) {
+                  done.push({
+                    type: type,
+                    sum: 1
+                  });
+                }
+              } else {
+                done[0].sum++;
               }
             });
-            if (isExist) {
-              done.push({
-                type: type,
-                sum: 1
-              });
-            }
-          } else {
-            done[0].sum++;
-          }
+
+          callback(null, url);
         });
-      }
+      };
+
+      async.mapLimit(aidArr, 10, function (url, callback) {
+        fetchUrl(url, callback);
+      }, function (err, result) {
+        console.log('final:');
+        for (var i = 0; i < result.length; i++) {
+          console.log(result[i]);
+        }
+      });
+      //for (var i = 0; i < aidArr.length; i++) {
+      //  var result = yield loadData('http://www.ithome.com/ithome/CommentCount.aspx?newsid=' + aidArr[i]);
+      //  var hehe = result.match(commentExp)[0].substr(10);
+      //  var html = hehe.substring(0, hehe.length - 2);
+      //  var $ = cheerio.load(unescape(html));
+      //  $('#ulcommentlist>li').each(function (index, element) {
+      //    var hehehehe = $($(element).find('div.info.rmp')[0]).find('.mobile');
+      //    if (hehehehe.length) {
+      //      //var name = $(hehehehe).find('a').text();
+      //      var type = $(hehehehe).attr('class').substr(7);
+      //      var isExist = true;
+      //      $(done).each(function (index2, element2) {
+      //        if (element2.type === type) {
+      //          element2.sum++;
+      //          isExist = false;
+      //          return false;
+      //        }
+      //      });
+      //      if (isExist) {
+      //        done.push({
+      //          type: type,
+      //          sum: 1
+      //        });
+      //      }
+      //    } else {
+      //      done[0].sum++;
+      //    }
+      //  });
+      //}
     };
     co(gen2).then(function () {
       console.log(done);
