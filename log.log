@@ -1,0 +1,39 @@
+Thu Jan 14 2016 12:20:31 GMT+0800 (CST)
+[
+  {
+    "type": "",
+    "sum": 2456
+  },
+  {
+    "type": "android",
+    "sum": 7158
+  },
+  {
+    "type": "iphone",
+    "sum": 2777
+  },
+  {
+    "type": "win10",
+    "sum": 3346
+  },
+  {
+    "type": "wp",
+    "sum": 1941
+  },
+  {
+    "type": "windows8",
+    "sum": 814
+  },
+  {
+    "type": "qiyu",
+    "sum": 86
+  },
+  {
+    "type": "itouch",
+    "sum": 84
+  },
+  {
+    "type": "ipad",
+    "sum": 255
+  }
+]
