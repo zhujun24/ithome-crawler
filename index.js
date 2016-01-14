@@ -1,6 +1,7 @@
 var co = require('co');
 var cheerio = require('cheerio');
 var request = require('request');
+var analyze = require('./analyze');
 var fs = require('fs');
 var path = require('path');
 
@@ -8,8 +9,9 @@ var aidExp = /\/\d+/;
 var commentExp = /unescape\('.*/;
 
 var aidArr = [];
+var allComment = 0;
 var done = [{
-  type: '',
+  type: 'unknown',
   sum: 0
 }];
 
@@ -20,6 +22,7 @@ var loadData = function (url) {
         resolve(body);
       } else {
         var result = {
+          url: url,
           error: error ? error : "no error",
           statusCode: response && response.statusCode ? response.statusCode : '000'
         };
@@ -32,7 +35,7 @@ var loadData = function (url) {
 fs.writeFile(path.join(__dirname, 'log.log'), '');
 fs.writeFile(path.join(__dirname, 'log.log'), 'Start at: ' + new Date() + '\n', {flag: 'a'});
 
-var pageAccount = 1;
+var pageAccount = 100;
 var gen1 = function*() {
   for (var i = 0; i < pageAccount; i++) {
     console.log('request page ' + (i + 1) + ' start!============');
@@ -66,6 +69,7 @@ co(gen1).then(function () {
           var hehehehe = $($(element).find('div.info.rmp')[0]).find('.mobile');
           if (hehehehe.length) {
             //var name = $(hehehehe).find('a').text();
+            allComment++;
             var type = $(hehehehe).attr('class').substr(7);
             var isExist = true;
             $(done).each(function (index2, element2) {
@@ -91,7 +95,8 @@ co(gen1).then(function () {
     }
   };
   co(gen2).then(function () {
-    console.log(JSON.stringify(done, null, 2));
+    analyze.analyze(done, allComment);
+    //console.log(JSON.stringify(done, null, 2));
     fs.writeFile(path.join(__dirname, 'log.log'), new Date() + '\n' + JSON.stringify(done, null, 2) + '\n', {flag: 'a'});
   }).catch(function (error) {
     console.log("gen2 error: " + error);
