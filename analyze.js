@@ -1,5 +1,5 @@
 exports.analyze = function (done, allComment) {
-  result = done.sort(function (a, b) {
+  var result = done.sort(function (a, b) {
     return b.sum - a.sum;
   });
 
@@ -18,7 +18,7 @@ exports.analyze = function (done, allComment) {
   };
 
   console.log('All comments: ' + allComment);
-  console.log('Device      Count       Percent\n');
+  console.log('Device      Count       Percent');
   for (var i = 0; i < result.length; i++) {
     formatLog(result[i].type, '' + result[i].sum, '' + (result[i].sum / allComment * 100));
   }
