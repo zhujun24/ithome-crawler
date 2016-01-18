@@ -1,5 +1,11 @@
-exports.analyze = function (done, allComment) {
-  var result = done.sort(function (a, b) {
+var fs = require('fs');
+var path = require('path');
+
+exports.analyze = function (done, allComment, device) {
+  var result1 = done.sort(function (a, b) {
+    return b.sum - a.sum;
+  });
+  var result2 = device.sort(function (a, b) {
     return b.sum - a.sum;
   });
 
@@ -11,15 +17,27 @@ exports.analyze = function (done, allComment) {
       return string;
     };
     var str = '';
-    str += addSpace(device, 12 - device.length);
-    str += addSpace(count, 12 - count.length);
+    str += addSpace(device, 20 - device.length);
+    str += addSpace(count, 20 - count.length);
     str += percent + '%';
-    console.log(str);
+    return str;
   };
 
-  console.log('All comments: ' + allComment);
-  console.log('Device      Count       Percent');
-  for (var i = 0; i < result.length; i++) {
-    formatLog(result[i].type, '' + result[i].sum, '' + (result[i].sum / allComment * 100));
+  console.log('All Comments: ' + allComment);
+  console.log('DeviceType          Count               Percent');
+  fs.writeFile(path.join(__dirname, 'log.log'), '\nAll Comments: ' + allComment + '\nDeviceType          Count               Percent\n', {flag: 'a'});
+  for (var i = 0; i < result1.length; i++) {
+    var str = formatLog(result1[i].type, '' + result1[i].sum, '' + (result1[i].sum / allComment * 100));
+    console.log(str);
+    fs.writeFile(path.join(__dirname, 'log.log'), str + '\n', {flag: 'a'});
+  }
+
+  console.log('\nAll Devices: ' + allComment);
+  console.log('DeviceInfo          Count               Percent');
+  fs.writeFile(path.join(__dirname, 'log.log'), '\nAll Devices: ' + allComment + '\DeviceInfo          Count               Percent\n', {flag: 'a'});
+  for (var i = 0; i < result2.length; i++) {
+    var str = formatLog(result2[i].type, '' + result2[i].sum, '' + (result2[i].sum / allComment * 100));
+    console.log(str);
+    fs.writeFile(path.join(__dirname, 'log.log'), str + '\n', {flag: 'a'});
   }
 };

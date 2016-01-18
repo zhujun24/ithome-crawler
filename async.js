@@ -16,9 +16,13 @@ var done = [{
   type: 'unknown',
   sum: 0
 }];
+var device = [{
+  type: 'unknown',
+  sum: 0
+}];
 
 var concurrencyCount = 0;
-var pageAccount = 10;
+var pageAccount = 5;
 var maxConcurrency = 20;
 
 var loadData = function (url) {
@@ -47,7 +51,7 @@ var crawlerComment = function () {
   async.mapLimit(aidArr, 200, function (url, callback) {
     //fetchUrl(url, callback);
     concurrencyCount++;
-    console.log('现在的并发数是', maxConcurrency, '，正在抓取的是', url);
+    //console.log('现在的并发数是', maxConcurrency, '，正在抓取的是', url);
     loadData(commentUrl + url).then(function (res) {
       concurrencyCount--;
       var hehe = res.match(commentExp)[0].substr(10);
@@ -59,7 +63,8 @@ var crawlerComment = function () {
           //var name = $(hehehehe).find('a').text();
           allComment++;
           var type = $(hehehehe).attr('class').substr(7);
-          var isExist = true;
+          var deviceInfo = $(hehehehe).find('a').eq(0).text();
+          var isExist = true, isDeviceExist = true;
           $(done).each(function (index2, element2) {
             if (element2.type === type) {
               element2.sum++;
@@ -73,8 +78,22 @@ var crawlerComment = function () {
               sum: 1
             });
           }
+          $(device).each(function (index2, element2) {
+            if (element2.type === deviceInfo) {
+              element2.sum++;
+              isDeviceExist = false;
+              return false;
+            }
+          });
+          if (isDeviceExist) {
+            device.push({
+              type: deviceInfo,
+              sum: 1
+            });
+          }
         } else {
           done[0].sum++;
+          device[0].sum++;
         }
       });
       console.log(url + ' are complete!');
@@ -85,8 +104,9 @@ var crawlerComment = function () {
     });
   }, function (err, result) {
     console.log('final:');
-    analyze.analyze(done, allComment);
-    fs.writeFile(path.join(__dirname, 'log.log'), new Date() + '\n' + JSON.stringify(done, null, 2) + '\n', {flag: 'a'});
+    analyze.analyze(done, allComment, device);
+    //console.log(device);
+    fs.writeFile(path.join(__dirname, 'log.log'), new Date() + '\n' + JSON.stringify(done, null, 2) + '\n' + JSON.stringify(device, null, 2), {flag: 'a'});
   });
 };
 
