@@ -22,7 +22,7 @@ var device = [{
 }];
 
 var concurrencyCount = 0;
-var pageAccount1 = 1;
+var pageAccount1 = 10;
 var maxConcurrency = 10;
 
 var loadData = function (url) {
