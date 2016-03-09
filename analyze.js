@@ -1,5 +1,11 @@
 var fs = require('fs');
 var path = require('path');
+var m = 0;
+var i = 0;
+var count1 = '';
+var percent1 = '';
+var str = '';
+var logContent;
 
 exports.analyze = function (done, allComment, device) {
   var result1 = done.sort(function (a, b) {
@@ -9,35 +15,42 @@ exports.analyze = function (done, allComment, device) {
     return b.sum - a.sum;
   });
 
-  var formatLog = function (device, count, percent) {
+  var formatLog = function (devices, count, percent) {
     var addSpace = function (string, num) {
-      for (var i = 0; i < num; i++) {
-        string += ' ';
+      var result = '';
+      var k = 0;
+      for (; k < num; k++) {
+        result += ' ';
       }
-      return string;
+      return `${string}${result}`;
     };
-    var str = '';
-    str += addSpace(device, 20 - device.length);
-    str += addSpace(count, 20 - count.length);
-    str += percent + '%';
-    return str;
+    var str1 = '';
+    str1 += addSpace(devices, 20 - devices.length);
+    str1 += addSpace(count, 20 - count.length);
+    str1 += `${percent}%`;
+    return str1;
   };
 
-  console.log('All Comments: ' + allComment);
+  console.log(`All Comments: ${allComment}`);
   console.log('DeviceType          Count               Percent');
-  fs.writeFile(path.join(__dirname, 'log.log'), '\nAll Comments: ' + allComment + '\nDeviceType          Count               Percent\n', {flag: 'a'});
-  for (var i = 0; i < result1.length; i++) {
-    var str = formatLog(result1[i].type, '' + result1[i].sum, '' + (result1[i].sum / allComment * 100));
+  logContent = `\nAll Comments: ${allComment}\n`;
+  logContent += `DeviceType          Count               Percent\n`;
+  fs.writeFile(path.join(__dirname, 'log.log'), logContent, {flag: 'a'});
+  for (; i < result1.length; i++) {
+    count1 = `${result1[i].sum}`;
+    percent1 = `${(result1[i].sum / allComment * 100)}`;
+    str = formatLog(result1[i].type, count1, percent1);
     console.log(str);
-    fs.writeFile(path.join(__dirname, 'log.log'), str + '\n', {flag: 'a'});
+    fs.writeFile(path.join(__dirname, 'log.log'), `${str}\n`, {flag: 'a'});
   }
 
-  console.log('\nAll Devices: ' + allComment);
+  console.log(`\nAll Devices: ${allComment}`);
   console.log('DeviceInfo          Count               Percent');
-  fs.writeFile(path.join(__dirname, 'log.log'), '\nAll Devices: ' + allComment + '\DeviceInfo          Count               Percent\n', {flag: 'a'});
-  for (var i = 0; i < result2.length; i++) {
-    var str = formatLog(result2[i].type, '' + result2[i].sum, '' + (result2[i].sum / allComment * 100));
+  logContent = `\nAll Devices: ${allComment}\DeviceInfo          Count               Percent\n`;
+  fs.writeFile(path.join(__dirname, 'log.log'), logContent, {flag: 'a'});
+  for (; m < result2.length; m++) {
+    str = formatLog(result2[m].type, `${result2[m].sum}`, `${(result2[m].sum / allComment * 100)}`);
     console.log(str);
-    fs.writeFile(path.join(__dirname, 'log.log'), str + '\n', {flag: 'a'});
+    fs.writeFile(path.join(__dirname, 'log.log'), `${str}\n`, {flag: 'a'});
   }
 };

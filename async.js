@@ -22,18 +22,19 @@ var device = [{
 }];
 
 var concurrencyCount = 0;
-var pageAccount = 5;
-var maxConcurrency = 20;
+var pageAccount1 = 1;
+var maxConcurrency = 10;
 
 var loadData = function (url) {
   return new Promise(function (resolve, reject) {
     request(url, {timeout: 5000}, function (error, response, body) {
-      if (!error && response.statusCode == 200) {
+      var result;
+      if (!error && response.statusCode === 200) {
         resolve(body);
       } else {
-        var result = {
+        result = {
           url: url,
-          error: error ? error : "no error",
+          error: error || 'no error',
           statusCode: response && response.statusCode ? response.statusCode : '000'
         };
         reject(result);
@@ -42,35 +43,34 @@ var loadData = function (url) {
   });
 };
 
-fs.writeFile(path.join(__dirname, 'log.log'), '');
-fs.writeFile(path.join(__dirname, 'log.log'), 'Start at: ' + new Date() + '\n', {flag: 'a'});
-
 var crawlerComment = function () {
-  fs.writeFile(path.join(__dirname, 'log.log'), new Date() + '\n' + JSON.stringify(aidArr, null, 2) + '\n', {flag: 'a'});
-  fs.writeFile(path.join(__dirname, 'log.log'), 'Start at: ' + new Date() + '\n', {flag: 'a'});
   async.mapLimit(aidArr, 200, function (url, callback) {
-    //fetchUrl(url, callback);
+    // fetchUrl(url, callback);
     concurrencyCount++;
-    //console.log('现在的并发数是', maxConcurrency, '，正在抓取的是', url);
+    // console.log('现在的并发数是', maxConcurrency, '，正在抓取的是', url);
     loadData(commentUrl + url).then(function (res) {
-      concurrencyCount--;
       var hehe = res.match(commentExp)[0].substr(10);
       var html = hehe.substring(0, hehe.length - 2);
       var $ = cheerio.load(unescape(html));
+      concurrencyCount--;
       $('#ulcommentlist>li').each(function (index, element) {
         var hehehehe = $($(element).find('div.info.rmp')[0]).find('.mobile');
+        var type = '';
+        var deviceInfo = '';
+        var isExist = true;
+        var isDeviceExist = true;
         if (hehehehe.length) {
-          //var name = $(hehehehe).find('a').text();
+          // var name = $(hehehehe).find('a').text();
           allComment++;
-          var type = $(hehehehe).attr('class').substr(7);
-          var deviceInfo = $(hehehehe).find('a').eq(0).text();
-          var isExist = true, isDeviceExist = true;
+          type = $(hehehehe).attr('class').substr(7);
+          deviceInfo = $(hehehehe).find('a').eq(0).text();
           $(done).each(function (index2, element2) {
             if (element2.type === type) {
               element2.sum++;
               isExist = false;
               return false;
             }
+            return true;
           });
           if (isExist) {
             done.push({
@@ -84,6 +84,7 @@ var crawlerComment = function () {
               isDeviceExist = false;
               return false;
             }
+            return true;
           });
           if (isDeviceExist) {
             device.push({
@@ -96,7 +97,7 @@ var crawlerComment = function () {
           device[0].sum++;
         }
       });
-      console.log(url + ' are complete!');
+      console.log(`${url} are complete!`);
       callback(null, url);
     }, function (err) {
       concurrencyCount--;
@@ -105,27 +106,27 @@ var crawlerComment = function () {
   }, function (err, result) {
     console.log('final:');
     analyze.analyze(done, allComment, device);
-    //console.log(device);
-    fs.writeFile(path.join(__dirname, 'log.log'), new Date() + '\n' + JSON.stringify(done, null, 2) + '\n' + JSON.stringify(device, null, 2), {flag: 'a'});
+    console.log(err, result);
   });
 };
 
-var crawlerList = function (pageAccount, crawlerComment) {
+var crawlerList = function (pageAccount, crawlerComment1) {
   var pages = [];
-  for (var i = 0; i < pageAccount; i++) {
+  var i = 0;
+  for (; i < pageAccount; i++) {
     pages.push(i + 1);
   }
   async.mapLimit(pages, maxConcurrency, function (url, callback) {
     concurrencyCount++;
     console.log('现在的并发数是', concurrencyCount, '，正在抓取的是', url);
-    loadData(listUrl + url + '.html').then(function (res) {
-      console.log('request page ' + url + ' success!');
+    loadData(`${listUrl}${url}.html`).then(function (res) {
       var $ = cheerio.load(res);
+      console.log(`request page ${url} success!`);
       $('.ulcl>li:not(.hr)>a').each(function (index, element) {
         var aid = $(element).attr('href').match(aidExp)[0].substr(1);
         aidArr.push(aid);
       });
-      console.log(url + ' are complete!');
+      console.log(`${url} are complete!`);
       concurrencyCount--;
       callback(null, url);
     }, function (err) {
@@ -135,8 +136,12 @@ var crawlerList = function (pageAccount, crawlerComment) {
   }, function (err, result) {
     console.log('==========aidArr final==========');
     console.log(aidArr);
-    crawlerComment();
+    console.log(err, result);
+    crawlerComment1();
   });
 };
 
-crawlerList(pageAccount, crawlerComment);
+fs.writeFile(path.join(__dirname, 'log.log'), '');
+fs.writeFile(path.join(__dirname, 'log.log'), `Start at: ${new Date()}\n`, {flag: 'a'});
+
+crawlerList(pageAccount1, crawlerComment);
