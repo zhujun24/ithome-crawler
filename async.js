@@ -9,6 +9,13 @@ var aidExp = /\/\d+/;
 var commentExp = /unescape\('.*/;
 var listUrl = 'http://www.ithome.com/list/list_';
 var commentUrl = 'http://www.ithome.com/ithome/CommentCount.aspx?newsid=';
+var options = {
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) '
+    + 'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36'
+  },
+  timeout: 5000
+};
 
 var aidArr = [];
 var allComment = 0;
@@ -23,23 +30,32 @@ var device = [{
 
 var concurrencyCount = 0;
 var pageAccount1 = 10;
-var maxConcurrency = 10;
+var pageSuccess = 0;
+var maxConcurrency = 5;
 
 var loadData = function (url) {
   return new Promise(function (resolve, reject) {
-    request(url, {timeout: 5000}, function (error, response, body) {
-      var result;
-      if (!error && response.statusCode === 200) {
-        resolve(body);
-      } else {
-        result = {
-          url: url,
-          error: error || 'no error',
-          statusCode: response && response.statusCode ? response.statusCode : '000'
-        };
-        reject(result);
-      }
-    });
+    try {
+      request(url, options, function (error, response, body) {
+        var result;
+        if (!error && response.statusCode === 200) {
+          resolve(body);
+        } else {
+          result = {
+            url: url,
+            error: error || 'no error',
+            statusCode: response && response.statusCode ? response.statusCode : '000'
+          };
+          reject(result);
+        }
+      });
+    } catch (error) {
+      reject({
+        url: url,
+        error: error || 'no error',
+        statusCode: '000'
+      });
+    }
   });
 };
 
@@ -110,7 +126,7 @@ var crawlerComment = function () {
   });
 };
 
-var crawlerList = function (pageAccount, crawlerComment1) {
+var crawlerList = function (pageAccount) {
   var pages = [];
   var i = 0;
   for (; i < pageAccount; i++) {
@@ -118,26 +134,29 @@ var crawlerList = function (pageAccount, crawlerComment1) {
   }
   async.mapLimit(pages, maxConcurrency, function (url, callback) {
     concurrencyCount++;
-    console.log('现在的并发数是', concurrencyCount, '，正在抓取的是', url);
+    console.log('现在的并发数是', concurrencyCount, '正在抓取的是', url);
     loadData(`${listUrl}${url}.html`).then(function (res) {
       var $ = cheerio.load(res);
-      console.log(`request page ${url} success!`);
+      pageSuccess++;
       $('.ulcl>li:not(.hr)>a').each(function (index, element) {
         var aid = $(element).attr('href').match(aidExp)[0].substr(1);
         aidArr.push(aid);
       });
-      console.log(`${url} are complete!`);
+      console.log(`page ${url} complete.`);
       concurrencyCount--;
       callback(null, url);
     }, function (err) {
       concurrencyCount--;
+      console.log(`${url} are failed.`);
       callback(null, err);
     });
   }, function (err, result) {
-    console.log('==========aidArr final==========');
-    console.log(aidArr);
+    // console.log(aidArr);
+    console.log(`应该抓 ${pageAccount1} 页.`);
+    console.log(`成功抓 ${pageSuccess} 页.`);
+    console.log(`成功抓 ${aidArr.length} 条.`);
     console.log(err, result);
-    crawlerComment1();
+    crawlerComment();
   });
 };
 
